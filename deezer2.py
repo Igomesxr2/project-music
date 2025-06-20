@@ -65,9 +65,12 @@ def get_top_tracks_by_genre_and_year(genre_name, year, top_n=50):
     
     # Ordenar por rank (popularidade)
     all_tracks.sort(key=lambda x: x['rank'], reverse=True)
+
+    # Filtrar por rank acima de 70
+    filtered_tracks = [track for track in all_tracks if track['rank'] > 70]
     
-    print(f"\nTop {top_n} músicas do gênero '{genre_name}' no ano {year}:\n")
-    for track in all_tracks[:top_n]:
+    print(f"\nTop {top_n} músicas do gênero '{genre_name}' no ano {year} com rank acima de 70:\n")
+    for track in filtered_tracks[:top_n]:
         print(f"{track['title']} - {track['artist']} | Popularidade: {track['rank']} | Link: {track['link']}")
 
 # -------------------------
