@@ -1,4 +1,7 @@
 import requests
+from flask import Flask, render_template, request
+
+app = Flask(__name__)
 
 def get_genre_id(genre_name):
     url = "https://api.deezer.com/genre"
@@ -42,40 +45,44 @@ def get_tracks_of_artist_in_year(artist_id, year):
                         'title': track['title'],
                         'artist': track['artist']['name'],
                         'rank': track.get('rank', 0),
-                        'link': track['link']
                     })
     return tracks
 
-def get_top_tracks_by_genre_and_year(genre_name, year, top_n=50):
+def get_top_tracks_by_genre_and_year(genre_name, year, top_n):
     genre_id = get_genre_id(genre_name)
     if not genre_id:
-        return
+        return []
     
     artists = get_artists_by_genre(genre_id)
     
     all_tracks = []
-    for artist in artists[:20]:
+    for artist in artists[:10]:
         artist_id = artist['id']
         artist_tracks = get_tracks_of_artist_in_year(artist_id, year)
         all_tracks.extend(artist_tracks)
     
     if not all_tracks:
         print(f"Nenhuma música encontrada no gênero '{genre_name}' no ano {year}.")
-        return
+        return []
     
     # Ordenar por rank (popularidade)
     all_tracks.sort(key=lambda x: x['rank'], reverse=True)
+    filter_tracks = [track for track in all_tracks if track['rank'] > 500000]
+    return filter_tracks
 
-    # Filtrar por rank acima de 70
-    filtered_tracks = [track for track in all_tracks if track['rank'] > 70]
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        genero = request.form['genero']
+        ano = int(request.form['ano'])
+        top_n = int(request.form.get('top_n', 50))
+
+        musicas = get_top_tracks_by_genre_and_year(genero, ano, top_n)
+        return render_template('index.html', musicas=musicas, genero=genero, ano=ano)
     
-    print(f"\nTop {top_n} músicas do gênero '{genre_name}' no ano {year} com rank acima de 70:\n")
-    for track in filtered_tracks[:top_n]:
-        print(f"{track['title']} - {track['artist']} | Popularidade: {track['rank']} | Link: {track['link']}")
+    return render_template('index.html', musicas=None)
+    
+if __name__ == '__main__':
+    app.run(debug=True)
 
-# -------------------------
-# EXEMPLO DE USO:
-genero_input = input("Digite o gênero musical: ")
-ano_input = input("Digite o ano (ex: 2023): ")
-
-get_top_tracks_by_genre_and_year(genero_input, int(ano_input), top_n=100)
